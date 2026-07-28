@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📝 Todo App - Supabase + Vercel</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
     <style>
         * {
             margin: 0;
@@ -321,20 +322,9 @@
 
         <div class="form-group">
             <form id="todoForm" class="form-row">
-                <input
-                    type="text"
-                    id="nameInput"
-                    placeholder="What needs to be done? *"
-                    maxlength="100"
-                    required
-                    autofocus
-                />
-                <input
-                    type="text"
-                    id="descriptionInput"
-                    placeholder="Add a description (optional)"
-                    maxlength="200"
-                />
+                <input type="text" id="nameInput" placeholder="What needs to be done? *" maxlength="100" required
+                autofocus />
+                <input type="text" id="descriptionInput" placeholder="Add a description (optional)" maxlength="200" />
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="addBtn">
                         ➕ Add Todo
@@ -363,234 +353,254 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://qkkgndyacsbfuanjbotx.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_S69RjBv-KFPd--uQjzAZUA_tPRd6i1H';
+        // ============================================================
+        // FIX: Use an IIFE (Immediately Invoked Function Expression)
+        // to avoid variable conflicts
+        // ============================================================
+        (function() {
+            'use strict';
 
-        console.log('🚀 App starting...');
-        console.log('📡 Supabase URL:', SUPABASE_URL);
+            // Supabase configuration
+            const SUPABASE_URL = 'https://qkkgndyacsbfuanjbotx.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_S69RjBv-KFPd--uQjzAZUA_tPRd6i1H';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('🚀 App starting...');
+            console.log('📡 Supabase URL:', SUPABASE_URL);
 
-        const form = document.getElementById('todoForm');
-        const nameInput = document.getElementById('nameInput');
-        const descInput = document.getElementById('descriptionInput');
-        const addBtn = document.getElementById('addBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const todoList = document.getElementById('todoList');
-        const emptyState = document.getElementById('emptyState');
-        const todoCount = document.getElementById('todoCount');
-        const statusMsg = document.getElementById('statusMessage');
+            // Create Supabase client - using a different variable name to avoid conflicts
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        function showStatus(message, type = 'error') {
-            statusMsg.textContent = message;
-            statusMsg.className = 'status-msg ' + type;
-            console.log(`[${type}]`, message);
-            setTimeout(() => {
-                statusMsg.className = 'status-msg';
-            }, 6000);
-        }
+            // DOM elements
+            const form = document.getElementById('todoForm');
+            const nameInput = document.getElementById('nameInput');
+            const descInput = document.getElementById('descriptionInput');
+            const addBtn = document.getElementById('addBtn');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const todoList = document.getElementById('todoList');
+            const emptyState = document.getElementById('emptyState');
+            const todoCount = document.getElementById('todoCount');
+            const statusMsg = document.getElementById('statusMessage');
 
-        function formatDate(isoString) {
-            if (!isoString) return 'just now';
-            const d = new Date(isoString);
-            return d.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function setLoading(loading) {
-            addBtn.disabled = loading;
-            addBtn.innerHTML = loading ? '⏳ Adding...' : '➕ Add Todo';
-        }
-
-        function renderTodos(todos) {
-            const items = todoList.querySelectorAll('.todo-item');
-            items.forEach(el => el.remove());
-
-            if (!todos || todos.length === 0) {
-                emptyState.style.display = 'block';
-                todoCount.textContent = '0';
-                return;
+            // Helper functions
+            function showStatus(message, type = 'error') {
+                statusMsg.textContent = message;
+                statusMsg.className = 'status-msg ' + type;
+                console.log(`[${type}]`, message);
+                setTimeout(() => {
+                    statusMsg.className = 'status-msg';
+                }, 6000);
             }
 
-            emptyState.style.display = 'none';
-            todoCount.textContent = todos.length;
-
-            const sorted = [...todos].sort((a, b) => {
-                if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                return new Date(b.created_at) - new Date(a.created_at);
-            });
-
-            for (const todo of sorted) {
-                const div = document.createElement('div');
-                div.className = `todo-item ${todo.completed ? 'completed' : ''}`;
-                div.dataset.id = todo.id;
-
-                const checkBtn = document.createElement('button');
-                checkBtn.className = 'todo-check';
-                checkBtn.textContent = todo.completed ? '✅' : '⬜';
-                checkBtn.setAttribute('aria-label', todo.completed ? 'Mark incomplete' : 'Mark complete');
-
-                const content = document.createElement('div');
-                content.className = 'todo-content';
-
-                const name = document.createElement('div');
-                name.className = `todo-name ${todo.completed ? 'done' : ''}`;
-                name.textContent = todo.name;
-
-                const desc = document.createElement('div');
-                desc.className = 'todo-description';
-                desc.textContent = todo.description || '';
-
-                const meta = document.createElement('div');
-                meta.className = 'todo-meta';
-                meta.textContent = `🕒 ${formatDate(todo.created_at)}`;
-
-                content.appendChild(name);
-                if (todo.description) content.appendChild(desc);
-                content.appendChild(meta);
-
-                const delBtn = document.createElement('button');
-                delBtn.className = 'todo-delete';
-                delBtn.textContent = '🗑️';
-                delBtn.setAttribute('aria-label', 'Delete todo');
-
-                div.appendChild(checkBtn);
-                div.appendChild(content);
-                div.appendChild(delBtn);
-                todoList.appendChild(div);
-
-                checkBtn.addEventListener('click', async () => {
-                    const newStatus = !todo.completed;
-                    try {
-                        const { error } = await supabase
-                            .from('todos')
-                            .update({ completed: newStatus })
-                            .eq('id', todo.id);
-
-                        if (error) throw error;
-                        await loadTodos();
-                        showStatus('✅ Updated!', 'success');
-                    } catch (err) {
-                        showStatus('❌ Failed to update: ' + err.message);
-                        console.error(err);
-                    }
-                });
-
-                delBtn.addEventListener('click', async () => {
-                    if (!confirm(`Delete "${todo.name}"?`)) return;
-                    delBtn.disabled = true;
-                    delBtn.textContent = '⏳';
-                    try {
-                        const { error } = await supabase
-                            .from('todos')
-                            .delete()
-                            .eq('id', todo.id);
-
-                        if (error) throw error;
-                        await loadTodos();
-                        showStatus('🗑️ Deleted!', 'success');
-                    } catch (err) {
-                        showStatus('❌ Failed to delete: ' + err.message);
-                        console.error(err);
-                        delBtn.disabled = false;
-                        delBtn.textContent = '🗑️';
-                    }
+            function formatDate(isoString) {
+                if (!isoString) return 'just now';
+                const d = new Date(isoString);
+                return d.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
             }
-        }
 
-        async function loadTodos() {
-            try {
-                const { data, error } = await supabase
-                    .from('todos')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+            function setLoading(loading) {
+                addBtn.disabled = loading;
+                addBtn.innerHTML = loading ? '⏳ Adding...' : '➕ Add Todo';
+            }
 
-                if (error) {
-                    console.error('❌ Load error:', error);
-                    showStatus('❌ Error loading: ' + error.message);
-                    renderTodos([]);
+            // Render todos
+            function renderTodos(todos) {
+                const items = todoList.querySelectorAll('.todo-item');
+                items.forEach(el => el.remove());
+
+                if (!todos || todos.length === 0) {
+                    emptyState.style.display = 'block';
+                    todoCount.textContent = '0';
                     return;
                 }
 
-                console.log(`✅ Loaded ${data?.length || 0} todos`);
-                renderTodos(data || []);
-            } catch (err) {
-                console.error('❌ Unexpected error:', err);
-                showStatus('❌ Unexpected error: ' + err.message);
-                renderTodos([]);
+                emptyState.style.display = 'none';
+                todoCount.textContent = todos.length;
+
+                const sorted = [...todos].sort((a, b) => {
+                    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                    return new Date(b.created_at) - new Date(a.created_at);
+                });
+
+                for (const todo of sorted) {
+                    const div = document.createElement('div');
+                    div.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                    div.dataset.id = todo.id;
+
+                    const checkBtn = document.createElement('button');
+                    checkBtn.className = 'todo-check';
+                    checkBtn.textContent = todo.completed ? '✅' : '⬜';
+                    checkBtn.setAttribute('aria-label', todo.completed ? 'Mark incomplete' : 'Mark complete');
+
+                    const content = document.createElement('div');
+                    content.className = 'todo-content';
+
+                    const name = document.createElement('div');
+                    name.className = `todo-name ${todo.completed ? 'done' : ''}`;
+                    name.textContent = todo.name;
+
+                    const desc = document.createElement('div');
+                    desc.className = 'todo-description';
+                    desc.textContent = todo.description || '';
+
+                    const meta = document.createElement('div');
+                    meta.className = 'todo-meta';
+                    meta.textContent = `🕒 ${formatDate(todo.created_at)}`;
+
+                    content.appendChild(name);
+                    if (todo.description) content.appendChild(desc);
+                    content.appendChild(meta);
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'todo-delete';
+                    delBtn.textContent = '🗑️';
+                    delBtn.setAttribute('aria-label', 'Delete todo');
+
+                    div.appendChild(checkBtn);
+                    div.appendChild(content);
+                    div.appendChild(delBtn);
+                    todoList.appendChild(div);
+
+                    // Toggle complete
+                    checkBtn.addEventListener('click', async () => {
+                        const newStatus = !todo.completed;
+                        try {
+                            const { error } = await supabaseClient
+                                .from('todos')
+                                .update({ completed: newStatus })
+                                .eq('id', todo.id);
+
+                            if (error) throw error;
+                            await loadTodos();
+                            showStatus('✅ Updated!', 'success');
+                        } catch (err) {
+                            showStatus('❌ Failed to update: ' + err.message);
+                            console.error(err);
+                        }
+                    });
+
+                    // Delete
+                    delBtn.addEventListener('click', async () => {
+                        if (!confirm(`Delete "${todo.name}"?`)) return;
+                        delBtn.disabled = true;
+                        delBtn.textContent = '⏳';
+                        try {
+                            const { error } = await supabaseClient
+                                .from('todos')
+                                .delete()
+                                .eq('id', todo.id);
+
+                            if (error) throw error;
+                            await loadTodos();
+                            showStatus('🗑️ Deleted!', 'success');
+                        } catch (err) {
+                            showStatus('❌ Failed to delete: ' + err.message);
+                            console.error(err);
+                            delBtn.disabled = false;
+                            delBtn.textContent = '🗑️';
+                        }
+                    });
+                }
             }
-        }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            // Load todos
+            async function loadTodos() {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('todos')
+                        .select('*')
+                        .order('created_at', { ascending: false });
 
-            const name = nameInput.value.trim();
-            const description = descInput.value.trim();
+                    if (error) {
+                        console.error('❌ Load error:', error);
+                        showStatus('❌ Error loading: ' + error.message);
+                        renderTodos([]);
+                        return;
+                    }
 
-            if (!name) {
-                showStatus('⚠️ Please enter a task name');
-                nameInput.focus();
-                return;
+                    console.log(`✅ Loaded ${data?.length || 0} todos`);
+                    renderTodos(data || []);
+                } catch (err) {
+                    console.error('❌ Unexpected error:', err);
+                    showStatus('❌ Unexpected error: ' + err.message);
+                    renderTodos([]);
+                }
             }
 
-            setLoading(true);
+            // Form submit - Add todo
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            try {
-                const { error } = await supabase
-                    .from('todos')
-                    .insert([{
-                        name: name,
-                        description: description || null,
-                        completed: false,
-                    }]);
+                const name = nameInput.value.trim();
+                const description = descInput.value.trim();
 
-                if (error) throw error;
+                if (!name) {
+                    showStatus('⚠️ Please enter a task name');
+                    nameInput.focus();
+                    return;
+                }
 
-                nameInput.value = '';
-                descInput.value = '';
-                showStatus('✅ Todo added!', 'success');
-                await loadTodos();
-            } catch (err) {
-                showStatus('❌ Failed to add: ' + err.message);
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        });
+                setLoading(true);
 
-        clearAllBtn.addEventListener('click', async () => {
-            if (!confirm('⚠️ Delete ALL todos? This cannot be undone.')) return;
+                try {
+                    const { error } = await supabaseClient
+                        .from('todos')
+                        .insert([{
+                            name: name,
+                            description: description || null,
+                            completed: false,
+                        }]);
 
-            clearAllBtn.disabled = true;
-            clearAllBtn.textContent = '⏳ Deleting...';
+                    if (error) throw error;
 
-            try {
-                const { error } = await supabase
-                    .from('todos')
-                    .delete()
-                    .neq('id', 0);
+                    nameInput.value = '';
+                    descInput.value = '';
+                    showStatus('✅ Todo added!', 'success');
+                    await loadTodos();
+                } catch (err) {
+                    showStatus('❌ Failed to add: ' + err.message);
+                    console.error(err);
+                } finally {
+                    setLoading(false);
+                }
+            });
 
-                if (error) throw error;
+            // Clear all
+            clearAllBtn.addEventListener('click', async () => {
+                if (!confirm('⚠️ Delete ALL todos? This cannot be undone.')) return;
 
-                showStatus('🗑️ All todos cleared', 'success');
-                await loadTodos();
-            } catch (err) {
-                showStatus('❌ Failed to clear: ' + err.message);
-                console.error(err);
-            } finally {
-                clearAllBtn.disabled = false;
-                clearAllBtn.textContent = '🗑️ Clear All';
-            }
-        });
+                clearAllBtn.disabled = true;
+                clearAllBtn.textContent = '⏳ Deleting...';
 
-        loadTodos();
-        console.log('✅ App ready!');
-        console.log('💡 Check Supabase dashboard for data');
+                try {
+                    const { error } = await supabaseClient
+                        .from('todos')
+                        .delete()
+                        .neq('id', 0);
+
+                    if (error) throw error;
+
+                    showStatus('🗑️ All todos cleared', 'success');
+                    await loadTodos();
+                } catch (err) {
+                    showStatus('❌ Failed to clear: ' + err.message);
+                    console.error(err);
+                } finally {
+                    clearAllBtn.disabled = false;
+                    clearAllBtn.textContent = '🗑️ Clear All';
+                }
+            });
+
+            // Initialize
+            loadTodos();
+            console.log('✅ App ready!');
+            console.log('💡 Check Supabase dashboard for data');
+
+        })(); // End of IIFE
     </script>
 </body>
 </html>
