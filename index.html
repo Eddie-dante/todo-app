@@ -600,6 +600,15 @@
             console.log('✅ App ready!');
             console.log('💡 Check Supabase dashboard for data');
 
+            // Suppress Google Analytics errors (optional)
+            window.addEventListener('error', function(e) {
+                if (e.target && e.target.src && e.target.src.includes('google-analytics')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return true;
+                }
+            }, true);
+
         })(); // End of IIFE
     </script>
 </body>
